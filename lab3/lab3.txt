@@ -1,0 +1,69 @@
+Make a new directory called lab3
+emacs 
+M-x make-directory Enter lab3 Enter
+
+Downloading the package by using:
+wget ftp://ftp.gnu.org/gnu/coreutils/coreutils-7.6.tar.gz
+
+Then untar the package using command:
+tar -xzvf coreutils-7.6.tar.gz
+
+After reading INSTALL file in coreutils-7.6, configure, build and 
+install the package by using:
+./configure; make; make install
+
+Running command:
+export LC_ALL='en_US.UTF-8'
+ls -l /bin/bash 
+
+by running these in host directory under en_US.UTF-8 
+environment shows the result:
+-rwxr-xr-x 1 root root 960616 Oct 17 03:05 /bin/bash
+
+which is correct(Unix format), but it suppose to show the wrong type 
+which is in YYYY-MM-DD format. The reason is probably because I am using
+a Mac OS X operating system or it already has an bug-fixed version coreutils
+installed already. 
+(Therefore, I couldn't follow exactly same as what the 
+instruction says in assignment, what I did is run the ls of unfixed 
+coreutils-7.6 first, recored the output, then apply the patch, install it, 
+and re-run the new ls and recored the output and compare two result.)
+
+Therefor, I went into ~/coreutils-7.6/src directory by using:
+cd ~/lab3/coreutils-7.6/src
+
+and run the ls command under /src directory by using command: 
+./ls -l ~/ans1.txt and ./ls ~/oldFile
+
+and output shows:
+-rw-r--r-- 1 zhangt csugrad 2579 2017-01-12 18:48 /u/cs/ugrad/zhangt/ans1.txt
+
+-rw-r--r-- 1 zhangt csugrad 0 1990-06-20 15:25 /u/cs/ugrad/zhangt/oldFile
+
+which shows there is something need to patch into ls command under
+coreutils 7.6
+
+By checking Brady's patch, it shows that the new lines should be in
+file ls.c
+
+Creating a new file called PATCH under /src, copy and paste the 
+content from Brady's patch, change the directory from a/src/ls.c to 
+~/lab3/coreutils-7.6/src/ls.c 
+
+Patching the file by using command:
+patch ls.c PATCH
+
+Then build again by using:
+make
+
+Then run the ls on a recent and old file under /src again:
+./ls -l ~/ans1.txt and ./ls ~/oldFile
+
+This time it shows the correct format which is:
+-rw-r--r-- 1 zhangt csugrad 2579 Jan 12 18:48 /u/cs/ugrad/zhangt/ans1.txt
+
+-rw-r--r-- 1 zhangt csugrad 0 Jun 20  1990 /u/cs/ugrad/zhangt/oldFile
+
+The patch works.
+
+

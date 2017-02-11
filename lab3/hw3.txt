@@ -1,0 +1,47 @@
+Q1: The line "case_long_iso_time_style:" is repeated twice,
+however its a goto statement which actually will call the 
+next "case_long_iso_time_style:", so its ok if don't remove
+it. Brady's patch removed this line probably to make the
+code more clear.
+
+Q2: The new patch will force the date and time in specific 
+format, which means assume the user is using English 
+environment and understand English. If there are some people
+who don't know English in my company, this new patched 
+version may cause misunderstanding problems. It also cannot 
+display other specific format of date and time if the user 
+wants to.
+
+Q3: The output will show up:
+Traceback (most recent call last):
+  File "./randline.py", line 70, in <module>
+    main()
+  File "./randline.py", line 64, in main
+    sys.stdout.write(generator.chooseline())
+  File "./randline.py", line 34, in chooseline
+    return random.choice(self.lines)
+  File "/usr/lib64/python2.7/random.py", line 274, in choice
+    return seq[int(self.random() * len(seq))]  # raises 
+IndexError if seq is empty
+
+The randline.py assume the files it read are non-empty
+ files, therefore, when empty file involve, the function in
+ "random" module will complain about the index error that
+ says the sequence is empty.
+
+Q4: The output will show up:
+File "randline.py", line 65
+    except IOError as (errno, strerror):
+                      ^
+SyntaxError: invalid syntax
+There are two possible reason of this error:
+First one is that python 3 will automatically unpack tuples, 
+so it may think the parentheses 
+there declared a tuple and trying to unpack it. 
+The second reason is that python 2's exceptions could be 
+iterated, which means "strerror" erased "errno" if we run 
+this by using python 2, but python 3's exceptions couldn't 
+be iterate. 
+The first possible reason seems more likely because when I
+ change "(errno, strerror):" to "(errno):", it still works 
+for python 2 but not work for python 3.

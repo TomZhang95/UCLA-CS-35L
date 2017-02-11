@@ -1,0 +1,50 @@
+#!/bin/bash                                                                                                                                                                                                                                                                                                                             
+directory=$1
+
+dotFile=$(ls -a ${directory} | grep "^\." | sort)
+declare m_Array
+let count=0
+
+for dfile in ${dotFile}
+do
+    if [ ! -L "${directory}/${dfile}" ]
+    then
+        if [ -f "${directory}/${dfile}" ]
+        then
+            if [ -r "${directory}/${dfile}" ]
+            then
+                m_Array[${count}]="${directory}/${dfile}"
+                let count+=1
+            fi
+        fi
+    fi
+done
+
+regFile=$(ls -a ${directory} | sort)
+
+for rfile in ${regFile}
+do
+             if [ ! -L "${directory}/${rfile}" ]
+             then
+                 if [ -f "${directory}/${rfile}" ]
+then
+                     if [ -r "${directory}/${rfile}" ]
+                     then
+                         m_Array[${count}]="${directory}/${rfile}"
+                         let count+=1
+                     fi
+                 fi
+             fi
+done
+
+for((i=0; i<${count}; i++))
+do
+    for((j=i+1; j<${count}; j++))
+    do
+        cmp -s "${m_Array[$i]}" "${m_Array[$j]}"
+        if [ $? == 0 ]
+        then
+            ln -f "${m_Array[$i]}" "${m_Array[$j]}"
+        fi
+    done
+done
