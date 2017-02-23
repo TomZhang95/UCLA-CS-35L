@@ -1,0 +1,156 @@
+Make a new directory called lab4
+then downloading the old stable version of coreutils:
+wget http://web.cs.ucla.edu/classes/winter17/cs35L/assign/coreutils-with-bug.tar.gz
+------------------------------------------------
+Untar the package
+tar -xzvf coreutils-with-bug.tar.gz
+------------------------------------------------
+change directory to "coreutils-with-bug" and build it
+cd coreutils-with-bug
+./configure
+make
+------------------------------------------------
+Error shows up:
+utimens.h:2:5: error: conflicting types for 'futimens'
+ int futimens (int, char const *, struct timespec const [2]);
+     ^~~~~~~~
+In file included from utimecmp.h:25:0,
+                 from utimecmp.c:25:
+/usr/include/sys/stat.h:373:12: note: previous declaration of 'futimens'
+was here extern int futimens (int __fd, const struct timespec __times[2])
+                    ^~~~~~~~
+ __THROW;
+            
+------------------------------------------------
+The problem is pretty obvious, there are two functions have same function 
+name but contain different elements, since there is no overloading in C, 
+compiler would call it error.
+------------------------------------------------
+Download the patch file in "coreutils-with-bug" directory, 
+then apply the patch to the package:
+wget http://web.cs.ucla.edu/classes/winter17/cs35L/assign/coreutils.diff
+patch -p0 < coreutils.diff
+------------------------------------------------
+We got 5 files patched:
+patching file lib/utimens.c
+patching file lib/utimens.h
+patching file src/copy.c
+patching file src/tee.c
+patching file src/touch.c
+------------------------------------------------
+Build agian, success this time, the patch changed one of the function's 
+name to coreutils_xxx
+for all functions that have same problem.
+------------------------------------------------
+Reproduce the bug:
+$ tmp=$(mktemp -d)
+$ cd $tmp
+$ touch -d '1918-11-11 11:00 GMT' wwi-armistice
+$ touch now
+$ sleep 1
+$ touch now1
+$ TZ=UTC0 ~/lab4/coreutils-with-bug/src/ls -lt --full-time wwi-armistice now 
+now1
+-rw-r--r-- 1 zhangt csugrad 0 1918-11-11 03:00:00.000000000 -0800 wwi-armistice
+-rw-r--r-- 1 zhangt csugrad 0 2017-01-30 17:25:16.601705918 -0800 now1
+-rw-r--r-- 1 zhangt csugrad 0 2017-01-30 17:25:06.121426256 -0800 now
+------------------------------------------------
+expected error that "wwi-armistice" should be in the third line 
+instead of first line.
+------------------------------------------------
+Then I created files "wwi-armistice", "now1", and "now" as same as 
+above in coreutils-with-bug directory for testing. Then run ls file in
+gdb:
+gdb
+file src/ls
+r -lt --full-time wwi-armistice now now1
+------------------------------------------------
+Set breakpoint at "main()" since we don't know where is wrong, then
+start looking for functions which are possibly wrong:
+b main
+r
+n (using n which is "step over" first)
+------------------------------------------------
+since the order of output is wrong, so I am looking for functions 
+related to "sort" or "time", this one grabbed my attention:
+1257	  if (files_index)
+(gdb) 
+1259	      sort_files ();
+------------------------------------------------
+Then set break point at line 1259
+b 1259
+r
+c
+si (step in, see what functions are called by sort_files())
+n
+------------------------------------------------
+I noticed this statment, variables involved time variables
+2962	  if (! setjmp (failed_strcoll))
+(gdb) n
+2964	      switch (sort_type)
+(gdb) 
+2969		  switch (time_type)
+(gdb) 
+2975		      func = sort_reverse ? rev_cmp_mtime : compare_mtime;
+------------------------------------------------
+Check the value of func see which value it chose:
+p func
+$2 = (int (*)(V, V)) 0x406dd0 <compare_mtime>
+------------------------------------------------
+Then stop using debugger, I went back to ls.c file, searched variable 
+"compare_mtime"
+emacs src/ls.c
+C-s compare_mtime
+------------------------------------------------
+Get result:
+static inline int
+cmp_mtime (struct fileinfo const *a, struct fileinfo const *b,
+           int (*cmp) (char const *, char const *))
+{
+  int diff = timespec_cmp (get_stat_mtime (&b->stat),
+                           get_stat_mtime (&a->stat));
+  return diff ? diff : cmp (a->name, b->name);
+}
+static int compare_mtime (V a, V b) { return cmp_mtime (a, b, xstrcoll); }
+static int compstr_mtime (V a, V b) { return cmp_mtime (a, b, strcmp); }
+static int rev_cmp_mtime (V a, V b) { return compare_mtime (b, a); }
+static int rev_str_mtime (V a, V b) { return compstr_mtime (b, a); }
+------------------------------------------------
+Found that"compare_mtime" called a function "cmp_mtime", which called 
+another function - "timespec_cmp"
+------------------------------------------------
+Then go back to gdb and set breakpoint at function "cmp_mtime", and
+step into function, got result:
+Breakpoint 1, compare_mtime (a=0x617160, b=0x617210) at ls.c:2884
+2884	static int compare_mtime (V a, V b) { return cmp_mtime (a, b, xstrcoll); }
+(gdb) si
+timespec_cmp (b=..., a=...) at ../lib/timespec.h:49
+49	  return diff ? diff : a.tv_nsec - b.tv_nsec;
+------------------------------------------------
+Then I go to the line 49 of timespec.h and checked variable "diff", 
+the error is actually caused by an overflow of integer in the 
+calculation of diff. Therefore, I changed the function to:
+static inline int
+timespec_cmp (struct timespec a, struct timespec b)
+{
+  if (a.tv_sec > b.tv_sec)
+         return 1;
+  else
+    return a.tv_nsec - b.tv_nsec;
+}
+which can aviod overflow and make sure return correct value
+------------------------------------------------
+then run the test again:
+~/lab4/coreutils-with-bug/src/ls -lt --full-time wwi-armistice now 
+now1
+-rw-r--r-- 1 zhangt csugrad 0 2017-01-30 22:54:46.027260040 -0800 now1
+-rw-r--r-- 1 zhangt csugrad 0 2017-01-30 22:54:37.644036510 -0800 now
+-rw-r--r-- 1 zhangt csugrad 0 1918-11-11 03:00:00.000000000 -0800 wwi-armistice
+which shows correct result now
+------------------------------------------------
+Then I use diff -u timespec_unfixed.h timespec.h > lab4.diff to generated the lab4.diff
+file which contains the changes I made.
+------------------------------------------------
+-rw-r--r-- 1 zhangt csugrad 0 2054-12-17 09:28:16.000000000 -0800 wwi-armistice
+-rw-r--r-- 1 zhangt csugrad 0 2017-01-30 21:21:44.453648000 -0800 now1
+-rw-r--r-- 1 zhangt csugrad 0 2017-01-30 21:21:36.551918000 -0800 now

@@ -1,0 +1,84 @@
+This part we are going to measure the differences in performance between sfrob and sfrobu using the time command.
+
+I wrote a simple C program to generate a file with frobnicated strings which has about 5Mb size:
+
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+int main()
+{
+    char* a = "*~BO *{_CIA *hXE]D *LER #@_GZY #E\\OX #^BO #FKPS #NEM\4 ";
+    char* b = (char*) malloc(6000000);
+    for (int i = 0; i < 100000; i++)
+        strcat(b, a);
+    printf("%s", b);
+    free(b);
+    return 0;
+}
+
+Then start comparing by using the 5Mb file:
+
+time ./sfrob < test
+Comparision times: 15851056
+real	0m1.863s
+user	0m0.824s
+sys	0m0.056s
+
+time ./sfrobu < test
+Comparison Tims: 15851056
+real	0m5.501s
+user	0m0.966s
+sys	0m4.105s
+
+which we can see a huge time difference between using buffered I/O and using unbuffered I/O, it is caused 
+by many more system calls were made by sfrobu.
+
+Then by changing the range of parameter i in the for loop above, create 4 files with contain 10, 100, 1000,
+ and 10000 lines with reapeating "*~BO *{_CIA *hXE]D *LER #@_GZY #E\\OX #^BO #FKPS #NEM\4" . Then analyze 
+the comparison
+ times of sfrob and sfrobu:
+
+Line Numbers			Comparison Times
+	10					460
+	100					7378
+	1000					101764
+	10000				1303918
+
+With the data, the function is: f(x) = 131.37x - 11491 where x is line numbers and f(x) is comparison times, and 
+R² = 0.99961 which confirmed that the equation is linear.
+
+The comparison between sfrob.c, sfrobu.c and sfrobs with an 5.2Mb file are:
+time ./sfrob < test
+real	0m1.511s
+user	0m0.817s
+sys	0m0.053s
+
+time ./sfrobu < test
+real	0m6.163s
+user	0m1.064s
+sys	0m4.695s
+
+time ./sfrobs < test
+real	0m0.826s
+user	0m0.305s
+sys	0m0.056s
+
+time ./sfrob -f < test
+real	0m1.684s
+user	0m0.994s
+sys	0m0.303s
+
+time ./sfrobu -f < test
+real	0m7.257s
+user	0m2.164s
+sys	0m4.540s
+
+time ./sfrobs -f < test
+real	0m0.771s
+user	0m0.304s
+sys	0m0.067s
+
+As we can see above, the shell script using tr and sort has the fastest speed, and sfrob.c is much faster
+than sfrobu.c as we expected.
+

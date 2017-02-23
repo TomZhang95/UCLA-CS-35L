@@ -1,0 +1,146 @@
+1. Write pseudocode for tr2b.c, then implement and test it.
+if args < 3
+	print error
+	exit
+assign from and to
+if from and to have different length
+	print error
+	exit
+for every word in from
+	if theres any two same
+		print error
+		exit
+read chars from stdin
+while not hitting the end
+	for every char in from
+		if character == part of from, transfer
+	output char
+	continue reading
+
+When I compile my tr2b.c by gcc, some waring shows up because I assigned a char* by const char*, however
+it won't effect the use of this program.
+tr2b.c: In function 'main':
+tr2b.c:13:18: warning: initialization discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+     char* from = argv[1];
+                  ^~~~
+tr2b.c:14:16: warning: initialization discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+     char* to = argv[2];
+                ^~~~
+
+2. Using the same pseudocode, but changed the reading and writing part in implementation, and text it. Same
+waring showed up.
+
+3. Generating a file with 6Mb
+dd if=/dev/urandom of=test1.txt bs=6000000 count=1
+
+a) When copying file to another by using buffered I/O:
+strace -c ./tr2b qwe asd < test1.txt > test-tr2b.txt
+
+% time     seconds  usecs/call     calls    errors syscall
+------ ----------- ----------- --------- --------- ----------------
+ 35.35    0.000035           4         9           mmap
+ 13.13    0.000013           7         2           open
+ 12.12    0.000012          12         1           brk
+  8.08    0.000008           2         4           mprotect
+  7.07    0.000007           4         2           close
+  7.07    0.000007           2         4           fstat
+  7.07    0.000007           7         1           execve
+  6.06    0.000006           6         1         1 access
+  4.04    0.000004           2         2           read
+  0.00    0.000000           0         1           write
+  0.00    0.000000           0         1           munmap
+  0.00    0.000000           0         1           arch_prctl
+------ ----------- ----------- --------- --------- ----------------
+100.00    0.000099                    29         1 total
+
+When copying file to another by using unbuffered I/O:
+strace -c ./tr2u qwe asd < test1.txt > test-tr2u.txt
+
+^CProcess 7423 detached
+% time     seconds  usecs/call     calls    errors syscall
+------ ----------- ----------- --------- --------- ----------------
+ 54.85    2.065994           1   1964578           write
+ 45.14    1.700238           1   1964579           read
+  0.00    0.000037           5         7           mmap
+  0.00    0.000023           6         4           mprotect
+  0.00    0.000014           4         4           brk
+  0.00    0.000013           7         2           open
+  0.00    0.000010          10         1           munmap
+  0.00    0.000007           7         1         1 access
+  0.00    0.000006           3         2           close
+  0.00    0.000006           3         2           fstat
+  0.00    0.000006           6         1           execve
+  0.00    0.000003           3         1           arch_prctl
+------ ----------- ----------- --------- --------- ----------------
+100.00    3.766357               3929182         1 total
+
+It took so long that I used C-c to stopped the progress, we can see the long time
+consuming is caused by too many system calls happened
+
+
+b) When copying file to terminal by using buffered I/O:
+strace -c ./tr2b 'a' 'b' < test1.txt
+
+% time     seconds  usecs/call     calls    errors syscall
+------ ----------- ----------- --------- --------- ----------------
+ 34.25    0.000062          12         5           write
+ 19.89    0.000036          18         2           read
+ 14.92    0.000027           3         9           mmap
+  9.94    0.000018           5         4           mprotect
+  4.97    0.000009           5         2           open
+  4.42    0.000008           2         4           fstat
+  4.42    0.000008           8         1           munmap
+  2.21    0.000004           4         1         1 access
+  2.21    0.000004           4         1           execve
+  1.10    0.000002           1         2           close
+  1.10    0.000002           2         1           arch_prctl
+  0.55    0.000001           1         1           brk
+------ ----------- ----------- --------- --------- ----------------
+100.00    0.000181                    33         1 total
+
+When copying file to terminal by using unbuffered I/O:
+strace -c ./tr2u qwe asd < test1.txt
+
+% time     seconds  usecs/call     calls    errors syscall
+------ ----------- ----------- --------- --------- ----------------
+ 58.95    8.282279           1   6000000           write
+ 41.05    5.768306           1   6000002           read
+  0.00    0.000041           6         7           mmap
+  0.00    0.000025           6         4           mprotect
+  0.00    0.000014           4         4           brk
+  0.00    0.000013           7         2           open
+  0.00    0.000009           9         1           munmap
+  0.00    0.000008           4         2           fstat
+  0.00    0.000007           4         2           close
+  0.00    0.000007           7         1         1 access
+  0.00    0.000006           6         1           execve
+  0.00    0.000003           3         1           arch_prctl
+------ ----------- ----------- --------- --------- ----------------
+100.00   14.050718              12000027         1 total
+
+We can see that unbuffered I/O will call system call for every single byte, 
+which took much longer time than buffered I/O to manipulate data. The time
+spending between buffered I/O and unbuffered I/O would have large different
+when we modifying a large file.
+
+4. Time consuming when using buffered I/O:
+time ./tr2b 'a' 'b' < test1.txt
+real	0m0.002s
+user	0m0.000s
+sys	0m0.001s
+
+Time consuming when using unbuffered I/O:
+time ./tr2u asd qwe < test1.txt
+real	0m7.077s
+user	0m0.516s
+sys	0m6.526s
+
+We can see a huge different between buffered I/O and unbuffered I/O in time 
+consuming, it is caused by system calls for every byte when using unbuffered
+I/O.
+
+
+
+
+
+
