@@ -1,0 +1,51 @@
+Server-Side:
+1. At the beginning, I installed openssh-server and openssh-client by using: 
+dpkg --get-selections | grep openssh
+sudo apt-get install openssh-server
+
+2. Generating public and private key pairs with file name TomKey.pub:
+ssh-keygen
+
+The key's randomart image is:
++---[RSA 2048]----+
+|   o+o  .oo*o    |
+|     .o.o =      |
+|      ...+ o     |
+|       ...  .    |
+|    . + S +      |
+|     O = + .     |
+|    = * * +o     |
+|   . + o #o+o    |
+|    . E.=o@o     |
++----[SHA256]-----+
+
+3. Then use following commands to create our own server:
+ssh-keygen (make public and private RSA keys)
+sudo useradd -d /home/Tom -m Tom
+sudo passwd Tom
+
+4. Then create a directory for clients, and give clients full permission on that
+ directory
+cd /home/Tom
+sudo mkdir .ssh
+sudo chown -R Tom .ssh
+sudo chmod 700 .ssh
+
+Client-Side:
+1. By using "$ ifconfig" command, I got my IP address: 172.30.57.141
+
+2. Copy my public key to my teammate's server for key-based authentication:
+ssh-copy-id –i TomKey.pub yizhu@172.30.17.99
+ssh-copy-id –i TomKey.pub leo@172.30.13.42
+
+3. Then add private key to authentication agent :
+ssh-add TomKey
+
+4. Then I can access my teammate's server without using password:
+ssh yizhu@172.30.17.99
+leo@172.30.13.42
+
+5. I ran several commands on those two remote host at the end, those commands works
+ well and GUI shows up:
+$ xterm, $ gedit, $ firefox
+

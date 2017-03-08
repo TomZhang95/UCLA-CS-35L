@@ -1,0 +1,17 @@
+1. In this condition, my resulting network will still be secure. The reason is 
+that when I sending messages to other server, the message is encrypted by the public key of the server owner, and only the server owner has the corresponding 
+private key to decrypt the message and get the real content. And the messages send
+from server to me is encrypted by my public key, and can only decrypt by my
+private key which only I have. Therefore even though they can know the binaries 
+send in network, they cannot get the real message.
+	However, if others tapped my and my teammate's keystroke, they will get the
+information before encrypt, which means our messages are no longer secure.
+	If I'm booting off USB and the others get the physical access of that USB, 
+then it means they can get my key pair, which means they are able to decrypt all 
+message send to me. Therefore the network is also not secure anymore.
+
+2. The reason why command "gpg --verify" failed to verify the key pair is that 
+gpg --verify can only verify the identity of sent files, but it cannot verify a 
+file is originally from a specific person or not. To verify the key pari I 
+created, there needs to be a third party who keep tracing which people own which 
+public keys, which known as certificate authority.
