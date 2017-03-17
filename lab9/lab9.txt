@@ -1,0 +1,140 @@
+1. clone diffutils from git: 
+git clone https://git.savannah.gnu.org/git/diffutils.git
+
+2. get a log of changes and put into git-log.txt:
+git log > git-log.txt
+
+3. get a list of tags and put into git-tag.txt:
+git tag > git-tags.txt
+
+4. Find the commit entitled “maint: quote 'like this' or "like this", not `like 
+this'”, and generate a patch for that commit, putting it into the file quote-
+patch.txt:
+emacs git-log.txt
+c-s maint: quote 'like this' or "like this", not `like this'
+copy the commit number
+git show 62ca21c8c1a5aa3488589dcb191a4ef04ae9ed4f > quote-patch.txt
+
+5. go into diffutils v3.0
+git checkout v3.0
+
+6. apply the patch to diffutils v3.0
+patch -p1 < quote-patch.txt
+
+There are 3 patches which cannot find the correct directory, type return to skip
+ them.
+
+7. Check the status by using git status, there are some modified files tracked:
+# HEAD detached at v3.0
+# Changes not staged for commit:
+#   (use "git add <file>..." to update what will be committed)
+#   (use "git checkout -- <file>..." to discard changes in working directory)
+#
+#	modified:   NEWS
+#	modified:   README
+#	modified:   TODO
+#	modified:   doc/diagmeet.note
+#	modified:   ms/config.bat
+#	modified:   ms/config.site
+#	modified:   po/en.po
+#	modified:   src/analyze.c
+#	modified:   src/cmp.c
+#	modified:   src/context.c
+#	modified:   src/diff.c
+#	modified:   src/diff.h
+#	modified:   src/diff3.c
+#	modified:   src/dir.c
+#	modified:   src/ifdef.c
+#	modified:   src/io.c
+#	modified:   src/sdiff.c
+#	modified:   src/side.c
+#	modified:   src/system.h
+#	modified:   src/util.c
+#	modified:   tests/help-version
+
+8. Use  vc-diff (C-x v =) and vc-revert (C-x v u) in emacs to revert changes made 
+to non .c files within emacs:
+[zhangt@lnxsrv07 ~/lab9/diffutils]$ emacs NEWS
+[zhangt@lnxsrv07 ~/lab9/diffutils]$ emacs README
+[zhangt@lnxsrv07 ~/lab9/diffutils]$ emacs TODO
+[zhangt@lnxsrv07 ~/lab9/diffutils]$ emacs doc/diagmeet.note
+[zhangt@lnxsrv07 ~/lab9/diffutils]$ emacs ms/config.bat
+[zhangt@lnxsrv07 ~/lab9/diffutils]$ emacs ms/config.site
+[zhangt@lnxsrv07 ~/lab9/diffutils]$ emacs po/en.po
+[zhangt@lnxsrv07 ~/lab9/diffutils]$ emacs src/diff.h
+[zhangt@lnxsrv07 ~/lab9/diffutils]$ emacs src/system.h
+[zhangt@lnxsrv07 ~/lab9/diffutils]$ emacs tests/help-version
+
+9. Then use C-x v = C-u C-c C-a to undo the hunks of each .c file manuely within 
+emacs:
+[zhangt@lnxsrv07 ~/lab9/diffutils]$ emacs src/analyze.c
+[zhangt@lnxsrv07 ~/lab9/diffutils]$ emacs src/cmp.c
+[zhangt@lnxsrv07 ~/lab9/diffutils]$ emacs src/context.c
+[zhangt@lnxsrv07 ~/lab9/diffutils]$ emacs src/diff.c
+[zhangt@lnxsrv07 ~/lab9/diffutils]$ emacs src/diff3.c
+[zhangt@lnxsrv07 ~/lab9/diffutils]$ emacs src/dir.c
+[zhangt@lnxsrv07 ~/lab9/diffutils]$ emacs src/ifdef.c
+[zhangt@lnxsrv07 ~/lab9/diffutils]$ emacs src/io.c
+[zhangt@lnxsrv07 ~/lab9/diffutils]$ emacs src/sdiff.c
+[zhangt@lnxsrv07 ~/lab9/diffutils]$ emacs src/side.c
+[zhangt@lnxsrv07 ~/lab9/diffutils]$ emacs src/util.c
+
+also undo all the changes to .c files other than changes to character string constants
+
+check again by using git status, I got:
+# HEAD detached at v3.0
+# Changes not staged for commit:
+#   (use "git add <file>..." to update what will be committed)
+#   (use "git checkout -- <file>..." to discard changes in working directory)
+#
+#	modified:   src/cmp.c
+#	modified:   src/diff.c
+#	modified:   src/diff3.c
+#	modified:   src/dir.c
+#	modified:   src/sdiff.c
+#	modified:   src/util.c
+
+
+
+10. I examined src/diff.c.rej and src/diff3.c.rej and found that all rejected lines
+are caused by `, therefore I search that character by using C-s within emacs and replace
+ to ' in corresponding lines.
+
+11. Remove all untracked files:
+git clean -f
+
+12. Now there only 6 tracked modified files shows up:
+#	modified:   src/cmp.c
+#	modified:   src/diff.c
+#	modified:   src/diff3.c
+#	modified:   src/dir.c
+#	modified:   src/sdiff.c
+#	modified:   src/util.c
+
+Then put these patch into file quote-3.0-patch.txt:
+git diff > quote-3.0-patch.txt
+
+13. Following the instructions in README-hacking and build:
+./bootstrap
+./configure
+make
+make check
+
+Check the result:
+diff . -
+diff --help
+
+output:
+diff: cannot compare '-' to a directory
+....
+which is the expected result that no ` appear
+
+14. Copied original diffutils v3.0 to directory diffutils-3.0, and the modified version to 
+directory diffutils-3.0-patch and run:
+D/diff -pru diffutils-3.0 diffutils-3.0-patch >quote-3.0-test.txt
+
+15. Comparing the two files by diff:
+diff quote-3.0-test.txt quote-3.0-patch.txt
+
+The result shows that the two files are not exactly same, the different part are some useless 
+lines such as the ` and ' character difference in comments.

@@ -1,0 +1,86 @@
+1. create hw9.txt
+
+2. check out the v3.0 directory while creating new branch:
+git checkout v3.0 -b quote
+
+3. Apply my patch to this new branch:
+patch -p1 < ~/lab9/diffutils-3.0-patch/quote-3.0-patch.txt
+
+patching file src/cmp.c
+patching file src/diff.c
+patching file src/diff3.c
+patching file src/dir.c
+patching file src/sdiff.c
+patching file src/util.c
+
+4. 5. Use emacs open 6 modified files, and use C-x 4 a to create ChangeLog file and
+add relevant changing explanation to it, 
+
+6. Then add and commit ChangeLog to branch:
+git add .
+git commit -F ChangeLog
+
+ Committer: Tianyang Zhang <zhangt@lnxsrv07.seas.ucla.edu>
+Your name and email address were configured automatically based
+on your username and hostname. Please check that they are accurate.
+You can suppress this message by setting them explicitly:
+
+    git config --global user.name "Your Name"
+    git config --global user.email you@example.com
+
+After doing this, you may fix the identity used for this commit with:
+
+    git commit --amend --reset-author
+
+ 7 files changed, 741 insertions(+), 56 deletions(-)
+ create mode 100644 src/#cmp.c#
+
+(*#cmp.c# is a file created automatically by linux server, which is not one of the original file, 
+but it won't effect anything of diffutils, and I deleted it manualy)
+
+7. Generate a formatted patch:
+git format-patch -1 --stdout > formatted-patch.txt 
+
+8. Partner: Reinaldo Daniswara
+Checking out v3.0 into new branch partner:
+git checkout -f v3.0
+git checkout -b partner
+
+Then I get my partner's formatted patch, and applied the patch:
+git am < formatted-patch-rei.txt
+
+Then build the resulting system and check:
+./bootstrap
+./configure
+make
+make check
+
+It works fine.
+
+
+9. Then use the command make distdir:
+make distdir
+
+Then a directory "diffutils-3.0.1-60aa" was created, and the ChangeLog file inside recorded
+the commit messages I wrote.
+
+
+10. Install XQuartz, and enable X11 when log into linux server, then change directory to ~eggert/src/gnu/emacs
+and run gitk:
+ssh -X zhangt@lnxsrv07.seas.ucla.edu
+cd ~eggert/src/gnu/emacs
+gitk
+
+Then I found the newest merge which not newer than 2015-01-05 is the one below:
+
+Author: Joakim Verona <joakim@verona.se>  2015-01-25 12:19:27
+Committer: Joakim Verona <joakim@verona.se>  2015-01-25 12:19:27
+Parent: e5087278b9bcab5847ce63d80c0d74c27f50e719 (merge master)
+Parent: a3689d3c661fe36df971c875760f8d500b5ae994 (Count MANY function args more reliably)
+Child:  c251ec96117a847799a61338e7648da8a4ade9e0 (Fix visual glitch during webkit resizing)
+Branches: master, remotes/origin/master and many more (32)
+Follows: emacs-24.4
+Precedes: emacs-25.0.90
+
+    Merge branch 'master' into xwidget
+
